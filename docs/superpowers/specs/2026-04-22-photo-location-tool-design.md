@@ -1,119 +1,121 @@
-# Photo Location Tool Design
+# 照片定位工具網站設計稿
 
-Date: 2026-04-22
-Status: Draft approved for planning
+日期：2026-04-22
+狀態：已完成設計確認，可進入規劃
 
-## Summary
+## 摘要
 
-Build a front-end / back-end separated photo location lookup service.
+建立一個前後端分離的照片定位服務網站。
 
-The product accepts an uploaded photo or camera capture, then determines where the photo was taken using the following priority:
+產品接收使用者上傳的照片或瀏覽器拍照結果，並依照以下優先順序判斷拍攝地點：
 
-1. Use EXIF/GPS metadata when available.
-2. Fall back to AI visual inference when GPS metadata is missing.
-3. If the image lacks enough evidence, return an explicit "unable to determine" result instead of guessing aggressively.
+1. 若照片含有 EXIF / GPS metadata，優先使用真實座標。
+2. 若沒有 GPS metadata，改用 AI 視覺推測。
+3. 若圖片線索不足，應明確回傳「無法判定」，而不是過度猜測。
 
-The first version should feel like a polished tool website rather than a rough demo, while keeping the implementation lean and infra-aligned with real cloud concepts.
+第一版要有明顯的產品感，不只是技術 demo；同時維持精簡、可在 Railway 上部署，並保留與真實雲端基礎設施對應的架構心智模型。
 
-## Product Goals
+## 產品目標
 
-- Let a user upload a photo or take one directly in the browser.
-- Show a trustworthy result with clear confidence boundaries.
-- Prefer real metadata over AI guesses.
-- Preserve short-term history without requiring login.
-- Keep infrastructure simple enough for local-first development and Railway deployment.
+- 讓使用者可以上傳單張照片或直接在瀏覽器中拍照。
+- 提供可信的定位結果，並清楚表達信心與不確定性。
+- 優先使用真實 metadata，而不是一開始就依賴 AI 猜測。
+- 不用登入也能保留短中期歷史紀錄。
+- 保持本地開發優先、部署簡單，適合 Railway。
 
-## Non-Goals
+## 非目標
 
-- User accounts and cross-device sync
+- 會員帳號與跨裝置同步
 - SSR
-- Background job / queue system in V1
-- Long-term original photo storage
-- Self-hosted vision models or custom CV pipelines
-- Google Maps embed or paid map SDK integration in V1
+- 第一版就導入背景工作佇列或 queue system
+- 長期保存原始照片
+- 自建視覺模型或複雜電腦視覺流程
+- 第一版就整合 Google Maps embed 或付費地圖 SDK
 
-## Tech Stack
+## 技術棧
 
-### Frontend
+### 前端
 
 - Vue 3
 - Vite SPA
 - TypeScript
 - Vue Router
 - Pinia
-- Leaflet for in-app map rendering
+- Leaflet 作為站內地圖元件
 
-### Backend
+### 後端
 
 - TypeScript
 - REST API
-- EXIF/GPS extraction
-- Thumbnail generation
-- Gemini integration behind a thin provider wrapper
+- EXIF / GPS 解析
+- 縮圖產生
+- Gemini 整合，並透過薄薄的 provider wrapper 隔離
 
-### Infrastructure
+### 基礎設施
 
-- Railway for deployment
-- Railway Postgres for structured data
-- Railway Bucket for thumbnail storage
-- Local-first development, Railway as V1 deployment target
+- Railway 作為部署平台
+- Railway Postgres 儲存結構化資料
+- Railway Bucket 儲存縮圖
+- 本地開發優先，Railway 作為第一版部署目標
 
-### Engineering Standards
+### 工程標準
 
-- Linting and project quality conventions should follow the existing `eat-sky` frontend baseline where applicable.
-- Use `@antfu/eslint-config` style strictness, including strong TypeScript rules.
-- Use the superpowers workflow: brainstorming -> design -> planning -> implementation.
+- lint 與專案品質基準參考 `eat-sky` 現有前端設定。
+- 採用 `@antfu/eslint-config` 風格的嚴格規則，包含較嚴格的 TypeScript 限制。
+- 開發流程借用 superpowers：brainstorming -> design -> planning -> implementation。
 
-## User Experience
+## 使用者體驗
 
-### Primary Flows
+### 主要流程
 
-1. Upload a single image.
-2. Take a photo directly from the browser camera.
-3. See analysis progress.
-4. View the result card, map state, and explanation.
-5. Review recent history.
+1. 上傳單張照片。
+2. 直接使用瀏覽器拍照。
+3. 觀看分析進度。
+4. 查看結果卡、地圖與解釋。
+5. 查看最近歷史紀錄。
 
-### Result Modes
+### 結果模式
 
-#### Precise
+#### 精準定位
 
-Used when:
+適用情境：
 
-- Valid EXIF/GPS is present, or
-- AI can support a specific point with enough confidence
+- 照片中存在有效的 EXIF / GPS。
+- 或 AI 有足夠把握支撐一個具體點位。
 
-Presentation:
+呈現方式：
 
-- Map pin shown
-- Main result label
-- Confidence score
-- Link to open in Google Maps
+- 顯示地圖 pin。
+- 顯示主要結果標籤。
+- 顯示信心分數。
+- 提供用 Google Maps 開啟的連結。
 
-#### Approximate
+#### 約略位置
 
-Used when AI can infer only an area-level answer such as city, district, or broad landmark region.
+適用情境：
 
-Presentation:
+- AI 只能推測到城市、行政區、景點範圍等區域級結果。
 
-- Approximate label shown explicitly
-- Map centers on an approximate point only
-- UI must not imply exact precision
+呈現方式：
 
-#### Not Found
+- 明確標示為約略位置。
+- 地圖只顯示約略中心點。
+- UI 不得暗示這是精準座標。
 
-Used when:
+#### 無法判定
 
-- The subject is too close
-- The image lacks identifiable location cues
-- The image is too ambiguous, blurry, or visually weak
+適用情境：
 
-Presentation:
+- 主體太近。
+- 圖片缺少可辨識地點線索。
+- 圖片過於模糊、內容太弱，或本身太模稜兩可。
 
-- No fake precision
-- Clear "unable to determine" explanation
+呈現方式：
 
-## System Architecture
+- 不假裝精準。
+- 明確說明為何無法判定。
+
+## 系統架構
 
 ```text
 Vue SPA
@@ -123,29 +125,29 @@ Vue SPA
       -> Gemini provider
 ```
 
-Railway project layout:
+Railway 專案預期包含：
 
-- Frontend service
-- Backend service
+- 前端 service
+- 後端 service
 - Postgres
 - Bucket
 
-The system stays synchronous in V1, but backend boundaries should leave room for future async job processing if analysis latency grows.
+第一版先維持同步流程，但後端模組邊界要保留未來改造成非同步 job 的空間。
 
-## Frontend Design
+## 前端設計
 
-### Modules
+### 模組切分
 
-- `app-shell`: layout, routing container, global notifications
-- `capture-upload`: file selection, camera capture, local preview
-- `analysis-flow`: submit analysis request, show loading and errors
-- `result-view`: main answer, top 3 candidates, explanation, confidence
-- `map-view`: Leaflet map, precise or approximate marker state, Google Maps link
-- `history-view`: recent analysis list and detail recall
+- `app-shell`：版面配置、路由容器、全域通知
+- `capture-upload`：選檔上傳、相機拍照、本地預覽
+- `analysis-flow`：送出分析、顯示 loading 與錯誤
+- `result-view`：主要答案、Top 3 候選、解釋與信心
+- `map-view`：Leaflet 地圖、精準或約略位置呈現、Google Maps 外連
+- `history-view`：最近查詢列表與結果回看
 
-### Frontend Structure Direction
+### 前端目錄方向
 
-Prefer feature-oriented organization:
+偏向功能導向切分：
 
 - `views/`
 - `features/upload/`
@@ -155,22 +157,22 @@ Prefer feature-oriented organization:
 - `features/map/`
 - `shared/`
 
-## Backend Design
+## 後端設計
 
-### Modules
+### 模組切分
 
-- `http layer`: request validation, response formatting, error mapping
-- `visitor service`: anonymous visitor token issuance and resolution
-- `rate limit service`: visitor token + IP based enforcement
-- `photo intake service`: file validation, metadata extraction, thumbnail generation
-- `location analysis service`: decide GPS path vs AI path, normalize final result
-- `ai provider layer`: provider interface plus Gemini implementation
-- `history service`: create and list searches
-- `cleanup job`: remove expired data and orphaned assets
+- `http layer`：request validation、response formatting、error mapping
+- `visitor service`：匿名 visitor token 簽發與解析
+- `rate limit service`：visitor token 與 IP 的雙層限制
+- `photo intake service`：檔案驗證、metadata 解析、縮圖產生
+- `location analysis service`：決定 GPS 路徑或 AI 路徑，並整理最終結果
+- `ai provider layer`：provider 介面與 Gemini 實作
+- `history service`：建立與查詢歷史紀錄
+- `cleanup job`：移除過期資料與孤兒資源
 
-### Provider Boundary
+### Provider 邊界
 
-Use a thin interface such as:
+用一層薄介面隔離 AI 供應商，例如：
 
 ```ts
 interface VisionLocationProvider {
@@ -178,148 +180,148 @@ interface VisionLocationProvider {
 }
 ```
 
-V1 should implement only one provider:
+第一版只實作一個 provider：
 
 - `GeminiVisionLocationProvider`
 
-This keeps V1 simple while preserving the option to add another provider later.
+這樣可以保留未來更換模型或供應商的空間，但不會把第一版做得太重。
 
-## Data Flow
+## 資料流
 
 ```text
-Upload photo
-  -> validate file
-  -> extract EXIF/GPS
-  -> if GPS exists: return precise result
-  -> else: call Gemini visual inference
-  -> normalize result
-  -> classify as precise / approximate / not_found
-  -> generate thumbnail
-  -> persist history
-  -> return response
+上傳照片
+  -> 驗證檔案
+  -> 解析 EXIF/GPS
+  -> 若有 GPS：直接回傳精準結果
+  -> 否則：呼叫 Gemini 做視覺推測
+  -> 正規化 AI 結果
+  -> 分類為 precise / approximate / not_found
+  -> 產生縮圖
+  -> 寫入歷史
+  -> 回傳前端
 ```
 
-### Decision Rules
+### 判定規則
 
-1. EXIF/GPS always has priority over AI.
-2. AI must not fabricate exact precision.
-3. "Unable to determine" is a valid product outcome, not an error.
-4. Top 3 candidates are only meaningful for AI-based results.
+1. EXIF / GPS 永遠優先於 AI。
+2. AI 不可假裝有精準度。
+3. 「無法判定」是正式產品結果，不是錯誤。
+4. Top 3 候選只適用於 AI 推測路徑。
 
-### Result Shape
+### 結果資料形狀
 
-Core response fields should support:
+核心 response 需支援：
 
-- `result_type`: `precise | approximate | not_found`
+- `result_type`：`precise | approximate | not_found`
 - `primary_result`
 - `candidates[]`
-- `source`: `exif | ai`
+- `source`：`exif | ai`
 
-Recommended `primary_result` content:
+建議 `primary_result` 內容：
 
 - label
-- latitude / longitude when justified
+- latitude / longitude（僅在合理時提供）
 - confidence
 - reason summary
 - source
 
-Recommended candidate content:
+建議 candidate 內容：
 
 - label
-- optional latitude / longitude
+- 可選的 latitude / longitude
 - confidence
 - clue list
 
-## Maps Strategy
+## 地圖策略
 
-### In-App Map
+### 站內地圖
 
-- Use Leaflet for map rendering.
-- Keep tile provider swappable.
-- Start with a low-cost OSM-based approach for V1.
+- 使用 Leaflet。
+- tile provider 必須可替換。
+- 第一版先採低成本的 OSM-based 方案。
 
-### External Navigation
+### 外部導航
 
-- Provide a button that opens Google Maps via URL.
-- Do not embed Google Maps SDK in V1.
+- 提供「用 Google Maps 開啟」按鈕。
+- 第一版不嵌入 Google Maps SDK。
 
-### Precision Policy
+### 精度策略
 
-- Prefer exact pins only when truly justified.
-- Fall back to area-level display when only approximate inference is available.
-- Show no misleading pin when the result is not trustworthy.
+- 只有在真的合理時才顯示精準 pin。
+- 若只能判斷到區域級，就退回約略位置顯示。
+- 如果結果不可信，就不要用地圖 pin 假裝很準。
 
-## Anonymous History Model
+## 匿名歷史模型
 
-### Visitor Identity
+### Visitor 身分
 
-- On first visit, backend issues an anonymous visitor token.
-- Browser stores the token.
-- Backend treats the token as the history and rate-limit anchor.
+- 第一次進站時，由後端簽發匿名 visitor token。
+- 瀏覽器保存該 token。
+- 後端以此 token 作為歷史與限流的主要關聯依據。
 
-### History Retention
+### 歷史保留策略
 
-- Keep up to 10 searches per visitor token.
-- When an 11th search is saved, remove the oldest saved search for that token.
-- Apply a maximum retention window of 180 days.
+- 每個 visitor token 最多保留 10 筆搜尋紀錄。
+- 第 11 筆進來時，刪除該 token 最舊的一筆。
+- 另設 180 天的最大保存期限。
 
-### Storage Rules
+### 儲存規則
 
-- Do not persist the original photo.
-- Persist only:
-  - thumbnail
-  - result data
-  - candidate data
-  - minimal visitor linkage
+- 不持久保存原始照片。
+- 持久保存的資料只包含：
+  - 縮圖
+  - 分析結果
+  - 候選地點
+  - 最小必要的 visitor 關聯資料
 
-## Rate Limiting
+## Rate Limit 策略
 
-Use a two-layer approach:
+採用雙層限制：
 
-1. Anonymous visitor token limit
-2. IP-based limit
+1. 匿名 visitor token 限制
+2. IP-based 限制
 
-Either limit may block a request.
+任一層超過上限都可以擋下請求。
 
-The system should support user-facing states such as:
+系統應能支援幾種前端可呈現狀態：
 
 - allowed
 - warning-near-limit
 - blocked
 
-Frontend history must not be treated as a security boundary.
+前端歷史紀錄不是安全邊界，真正限制必須在後端執行。
 
-## Data Storage
+## 資料儲存
 
 ### Postgres
 
-Suggested conceptual tables:
+建議的概念性資料表：
 
 - `visitors`
 - `searches`
 - `search_results`
 - `candidate_locations`
-- `rate_limit_events` or equivalent aggregated tracking
+- `rate_limit_events` 或等價的聚合限制資料
 
 ### Railway Bucket
 
-- Store thumbnails only
-- No original photo persistence in V1
+- 只存縮圖
+- 第一版不持久保存原圖
 
-## Cleanup Strategy
+## 清理策略
 
-Use a periodic cleanup job, not request-path cleanup.
+使用週期性 cleanup job，而不是把清理邏輯塞進每次 request。
 
-Cleanup responsibilities:
+清理工作包含：
 
-- remove expired thumbnails
-- remove expired search history beyond 180 days
-- enforce per-visitor max-10 history invariant
-- remove orphaned storage objects if any exist
+- 刪除過期縮圖
+- 刪除超過 180 天的歷史
+- 維持每個 visitor 最多 10 筆歷史
+- 刪除可能出現的孤兒 storage 物件
 
-## Error Handling
+## 錯誤處理
 
-Expected user-facing outcomes:
+預期的使用者可見狀態：
 
 - invalid file
 - unsupported media type
@@ -328,63 +330,63 @@ Expected user-facing outcomes:
 - analysis failed
 - unable to determine location
 
-Important distinction:
+需要特別區分：
 
-- "Unable to determine location" is a valid result state.
-- "Analysis failed" is a technical failure state.
+- `unable to determine location` 是正常產品結果
+- `analysis failed` 是技術失敗
 
-## Testing Strategy
+## 測試策略
 
-### Required Quality Gates
+### 必要品質關卡
 
 - lint
 - typecheck
 - frontend unit tests
 - backend unit tests
 
-### High-Value Test Areas
+### 高價值測試點
 
-- valid upload vs invalid upload
-- EXIF/GPS happy path
-- malformed GPS metadata handling
+- 合法與不合法圖片上傳
+- EXIF / GPS happy path
+- 無效 GPS metadata 的處理
 - AI response normalization
-- AI precise vs approximate vs not_found classification
-- malformed AI output fallback behavior
-- history retention max 10 items
-- 180-day cleanup behavior
-- rate-limit behavior for visitor token and IP
+- AI precise / approximate / not_found 分類
+- malformed AI output 的 fallback
+- 歷史最多 10 筆的保留規則
+- 180 天過期資料清理
+- visitor token 與 IP 的 rate limit 行為
 
-## Delivery Approach
+## 交付方向
 
-Recommended implementation shape for V1:
+第一版建議採用：
 
-- synchronous request flow
-- clean service boundaries
-- no queue yet
-- abstractions only where they reduce future rewrite risk
+- 同步 request flow
+- 清楚的 service 邊界
+- 先不引入 queue
+- 只在真正能降低未來重寫成本的地方做抽象
 
-This is the recommended "approach B" outcome:
+這也就是前面確認過的方案 B：
 
-- simple enough to ship quickly
-- structured enough to evolve into async workers, auth, or multiple AI providers later
+- 簡單到能快速推出
+- 但結構足夠清楚，未來要演進成 async worker、登入制或多 AI provider 都不會太痛
 
-## Open Questions Resolved
+## 已確認的關鍵決策
 
-- Frontend should use Vue, not SSR.
-- V1 deployment target is Railway.
-- AI provider in V1 is Gemini.
-- Gemini credentials should come from Google AI Studio for initial development.
-- In-app maps should prioritize low cost, while external open-in-Google-Maps links remain available.
+- 前端使用 Vue，不做 SSR。
+- 第一版部署平台為 Railway。
+- 第一版 AI provider 為 Gemini。
+- Gemini API key 初期由 Google AI Studio 取得。
+- 站內地圖優先低成本方案，外部導圖使用 Google Maps URL。
 
-## Planning Readiness
+## 可進入規劃的範圍
 
-This design is intentionally scoped so the next step can be a concrete implementation plan covering:
+這份設計已經收斂到可以往下拆 implementation plan，範圍包含：
 
-- project scaffolding
-- frontend architecture
-- backend API design
+- 專案初始化與目錄規劃
+- 前端架構
+- 後端 API 設計
 - DB schema
-- storage integration
-- Gemini integration
+- bucket / storage 整合
+- Gemini 整合
 - cleanup job
-- tests and deployment
+- 測試與部署流程
