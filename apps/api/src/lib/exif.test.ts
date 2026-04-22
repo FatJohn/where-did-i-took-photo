@@ -7,7 +7,7 @@ vi.mock('exifr', () => ({
   },
 }))
 
-import { readPhotoMetadata } from './exif'
+const { readPhotoMetadata } = await import('./exif')
 
 describe('readPhotoMetadata', () => {
   it('returns null gps values for an image without EXIF GPS data', async () => {

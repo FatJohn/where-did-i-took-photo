@@ -1,9 +1,11 @@
+import type { Buffer } from 'node:buffer'
+
 import { readPhotoMetadata } from '../lib/exif'
 import { createThumbnail } from '../lib/thumbnail'
 
 const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic'])
 
-type UploadLike = {
+interface UploadLike {
   filename: string
   mimetype: string
   toBuffer: () => Promise<Buffer>

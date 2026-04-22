@@ -1,3 +1,5 @@
+import type { Buffer } from 'node:buffer'
+
 import sharp from 'sharp'
 
 export async function createThumbnail(buffer: Buffer) {

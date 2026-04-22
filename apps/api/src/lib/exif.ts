@@ -1,3 +1,5 @@
+import type { Buffer } from 'node:buffer'
+
 import exifr from 'exifr'
 
 export async function readPhotoMetadata(buffer: Buffer) {

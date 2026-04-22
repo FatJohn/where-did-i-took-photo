@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../lib/exif', () => ({
@@ -14,7 +16,7 @@ vi.mock('../lib/thumbnail', () => ({
   }),
 }))
 
-import { createPhotoIntakeService } from './photo-intake-service'
+const { createPhotoIntakeService } = await import('./photo-intake-service')
 
 describe('photo intake service', () => {
   it('returns parsed GPS metadata and thumbnail bytes', async () => {
