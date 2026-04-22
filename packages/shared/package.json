@@ -1,0 +1,20 @@
+{
+  "name": "@photo-location/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^8.2.0",
+    "eslint": "^10.2.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.4"
+  }
+}
