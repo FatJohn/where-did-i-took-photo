@@ -4,6 +4,7 @@ import sensible from '@fastify/sensible'
 import Fastify from 'fastify'
 
 import { healthRoute } from './routes/health'
+import { historyRoute } from './routes/history'
 
 interface BuildAppOptions {
   maxUploadBytes: number
@@ -24,6 +25,7 @@ export async function buildApp(options: BuildAppOptions) {
     },
   })
   await app.register(healthRoute)
+  await app.register(historyRoute)
 
   return app
 }
