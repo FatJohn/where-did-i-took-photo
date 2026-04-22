@@ -30,6 +30,7 @@ describe('photo intake service', () => {
     expect(result.metadata.latitude).toBe(25.033964)
     expect(result.metadata.longitude).toBe(121.564468)
     expect(result.thumbnail.contentType).toBe('image/jpeg')
+    expect(result.originalBuffer).toEqual(Buffer.from('image-bytes'))
   })
 
   it('rejects unsupported mime types', async () => {

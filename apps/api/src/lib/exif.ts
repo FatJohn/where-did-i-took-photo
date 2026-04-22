@@ -1,4 +1,4 @@
-import * as exifr from 'exifr'
+import exifr from 'exifr'
 
 export async function readPhotoMetadata(buffer: Buffer) {
   const gps = await exifr.gps(buffer)
