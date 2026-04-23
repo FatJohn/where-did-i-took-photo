@@ -1,29 +1,29 @@
-# Photo Location Tool
+# 照片定位工具
 
-Monorepo for a photo location lookup app:
+這是一個照片定位網站的 monorepo：
 
-- `apps/web`: Vue 3 SPA for upload, result review, and anonymous history
-- `apps/api`: Fastify API for `/health`, `/analyze`, and `/history/:visitorId`
-- `packages/shared`: shared Zod contracts used by both apps
+- `apps/web`：提供上傳、結果檢視與匿名歷史紀錄的 Vue 3 SPA
+- `apps/api`：提供 `/health`、`/analyze`、`/history/:visitorId` 的 Fastify API
+- `packages/shared`：前後端共用的 Zod contract
 
-## Local Development
+## 本機開發
 
-### Prerequisites
+### 前置需求
 
-- Node.js 22+
+- Node.js 22 以上
 - `pnpm` 10
-- A reachable Postgres database for the API
+- API 可連線的 Postgres 資料庫
 - Gemini API key
-- S3-compatible bucket credentials for thumbnail upload
+- 可相容 S3 的縮圖儲存設定
 
-### Install
+### 安裝
 
 ```bash
 pnpm install
 cp .env.example .env
 ```
 
-Fill in `.env` with values from your local setup:
+請依你的本機環境填入 `.env`：
 
 ```bash
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/photo_location
@@ -34,53 +34,71 @@ S3_BUCKET=photo-location-thumbnails
 S3_ACCESS_KEY_ID=your-access-key
 S3_SECRET_ACCESS_KEY=your-secret-key
 MAX_UPLOAD_BYTES=10485760
+VISITOR_LIMIT_PER_DAY=20
+IP_LIMIT_PER_DAY=50
 ```
 
-For the SPA, point the browser app at the API by creating `apps/web/.env.local`:
+說明：
+
+- 如果你要在本機真的跑 `/analyze` 完整流程，就需要設定 `GEMINI_API_KEY`、`S3_ENDPOINT`、`S3_BUCKET`、`S3_ACCESS_KEY_ID`、`S3_SECRET_ACCESS_KEY`。
+- `VISITOR_LIMIT_PER_DAY` 與 `IP_LIMIT_PER_DAY` 用來控制目前的行程內 rate limiting 行為。
+- `.env.example` 裡也有 `VISITOR_TOKEN_SECRET`，但目前實作還沒有在 runtime 使用這個值。
+
+前端 SPA 需要透過 `apps/web/.env.local` 指到本機 API：
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8787
 ```
 
-### Run
+### 啟動
 
-Start the API:
+先啟動 API：
 
 ```bash
 pnpm --filter @photo-location/api dev
 ```
 
-Start the web app in a second terminal:
+再用另一個 terminal 啟動前端：
 
 ```bash
 pnpm --filter @photo-location/web dev
 ```
 
-### Checks
+### 本機驗證
+
+```bash
+pnpm lint
+pnpm test
+pnpm typecheck
+pnpm build
+```
+
+如果你想分開跑各 package 檢查，可以使用：
 
 ```bash
 pnpm --filter @photo-location/api test
 pnpm --filter @photo-location/web test
-pnpm typecheck
+pnpm --filter @photo-location/api typecheck
+pnpm --filter @photo-location/web typecheck
 ```
 
-## Railway Deployment
+## Railway 部署
 
-The current workspace is easiest to deploy as two Railway services plus managed data resources:
+目前這個 workspace 最適合部署成兩個 Railway service 加上託管資料資源：
 
-- one service for `apps/api`
-- one static site for `apps/web`
-- one Railway Postgres instance
-- one Railway Bucket or another S3-compatible object store
+- 一個 `apps/api` service
+- 一個 `apps/web` 靜態網站
+- 一個 Railway Postgres
+- 一個 Railway Bucket，或其他相容 S3 的物件儲存
 
 ### API Service
 
-Use the repo root as the Railway source and configure:
+以 repo root 作為 Railway source，並設定：
 
-- Build command: `pnpm install --frozen-lockfile && pnpm --filter @photo-location/api build`
-- Start command: `node apps/api/dist/server.js`
+- Build command：`pnpm install --frozen-lockfile && pnpm --filter @photo-location/api build`
+- Start command：`node apps/api/dist/server.js`
 
-Set these variables on the API service:
+API service 需要設定這些環境變數：
 
 - `DATABASE_URL`
 - `GEMINI_API_KEY`
@@ -94,17 +112,17 @@ Set these variables on the API service:
 
 ### Web Service
 
-Build the SPA and publish the generated static files:
+建置 SPA 後發布靜態檔：
 
-- Build command: `pnpm install --frozen-lockfile && pnpm --filter @photo-location/web build`
-- Publish directory: `apps/web/dist`
+- Build command：`pnpm install --frozen-lockfile && pnpm --filter @photo-location/web build`
+- Publish directory：`apps/web/dist`
 
-Set:
+另外設定：
 
 - `VITE_API_BASE_URL=https://<your-api-service>.up.railway.app`
 
-### Deploy Notes
+### 部署注意事項
 
-- The API must stay configured for multipart uploads. The file field name remains `photo`.
-- `/history/:visitorId?` in the SPA still depends on visitor token and visitor id values persisted by the browser after a successful analyze request.
-- If you rotate bucket or API domains, update `VITE_API_BASE_URL` and redeploy the web service.
+- API 目前必須維持 multipart upload 設定，上傳欄位名稱固定是 `photo`。
+- SPA 的 `/history/:visitorId?` 仍依賴瀏覽器在成功分析後儲存的 visitor token 與 visitor id。
+- 如果你更換 bucket 或 API 網域，記得同步更新 `VITE_API_BASE_URL` 並重新部署前端。
