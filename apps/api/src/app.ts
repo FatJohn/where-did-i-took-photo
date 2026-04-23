@@ -3,6 +3,7 @@ import multipart from '@fastify/multipart'
 import sensible from '@fastify/sensible'
 import Fastify from 'fastify'
 
+import { analyzeRoute } from './routes/analyze'
 import { healthRoute } from './routes/health'
 import { historyRoute } from './routes/history'
 
@@ -25,6 +26,7 @@ export async function buildApp(options: BuildAppOptions) {
     },
   })
   await app.register(healthRoute)
+  await app.register(analyzeRoute)
   await app.register(historyRoute)
 
   return app
