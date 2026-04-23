@@ -1,12 +1,17 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useAnalysisStore } from '@/features/analysis/stores/analysis'
+import ResultMap from '@/features/map/components/ResultMap.vue'
+import ResultCard from '@/features/results/components/ResultCard.vue'
+import UploadPanel from '@/features/upload/components/UploadPanel.vue'
 
 const analysisStore = useAnalysisStore()
+const { errorMessage, result, status } = storeToRefs(analysisStore)
 
 const statusLabel = computed(() => {
-  switch (analysisStore.status) {
+  switch (status.value) {
     case 'submitting':
       return '分析中'
     case 'success':
@@ -17,6 +22,15 @@ const statusLabel = computed(() => {
       return '準備就緒'
   }
 })
+
+async function handlePhotoSelected(photo: File) {
+  try {
+    await analysisStore.submitPhoto(photo)
+  }
+  catch {
+    // The store already exposes the error state for the view.
+  }
+}
 </script>
 
 <template>
@@ -38,9 +52,24 @@ const statusLabel = computed(() => {
     </section>
 
     <section class="foundation-card">
-      <h2>前端基礎骨架已就緒</h2>
+      <UploadPanel @select="handlePhotoSelected" />
+
+      <p
+        v-if="status === 'submitting'"
+        class="helper-text"
+      >
+        正在解析照片、整理 EXIF，並在必要時交給 AI 推測位置。
+      </p>
+      <p
+        v-else-if="status === 'error'"
+        class="helper-text helper-text-error"
+      >
+        分析失敗：{{ errorMessage }}
+      </p>
+
+      <h2>也可以直接跑既有 demo flow</h2>
       <p>
-        上傳、拍照與結果地圖會在後續任務接上；目前先把 SPA、router、store 和 API client 邊界固定好。
+        這個按鈕會維持既有示範提交流程，方便快速驗證 API 與頁面整合。
       </p>
 
       <div class="actions">
@@ -63,11 +92,11 @@ const statusLabel = computed(() => {
     </section>
 
     <section
-      v-if="analysisStore.result"
-      class="result-preview"
+      v-if="status === 'success' && result"
+      class="results-grid"
     >
-      <h2>{{ analysisStore.result.primaryResult.label }}</h2>
-      <p>{{ analysisStore.result.primaryResult.reasonSummary }}</p>
+      <ResultCard :result="result" />
+      <ResultMap :result="result" />
     </section>
   </main>
 </template>
@@ -83,7 +112,7 @@ const statusLabel = computed(() => {
 
 .hero,
 .foundation-card,
-.result-preview {
+.results-grid {
   padding: 1.5rem;
   border: 1px solid rgba(146, 64, 14, 0.12);
   border-radius: 1.25rem;
@@ -121,10 +150,24 @@ h2 {
   line-height: 1.7;
 }
 
+.helper-text {
+  margin-top: 1rem;
+  color: #475569;
+}
+
+.helper-text-error {
+  color: #b91c1c;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.results-grid {
+  display: grid;
+  gap: 1rem;
 }
 
 .history-link {

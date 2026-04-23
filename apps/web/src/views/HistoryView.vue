@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useHistoryStore } from '@/features/history/stores/history'
+import ResultCard from '@/features/results/components/ResultCard.vue'
 import { getStoredVisitorId } from '@/shared/api/client'
 
 const route = useRoute()
@@ -35,12 +36,26 @@ watch(resolvedVisitorId, async (visitorId) => {
 }, {
   immediate: true,
 })
+
+const historySummary = computed(() => {
+  if (items.value.length === 0) {
+    return ''
+  }
+
+  return `共 ${items.value.length} 筆分析結果`
+})
 </script>
 
 <template>
   <main class="history-view">
     <section class="history-card">
       <h1>匿名歷史</h1>
+      <p
+        v-if="status === 'success' && historySummary"
+        class="history-summary"
+      >
+        {{ historySummary }}
+      </p>
       <p v-if="status === 'idle'">
         尚未找到可用的訪客歷史。先回首頁完成一次分析，或直接開啟帶有 visitor id 的歷史網址。
       </p>
@@ -54,8 +69,14 @@ watch(resolvedVisitorId, async (visitorId) => {
         <li
           v-for="item in items"
           :key="item.searchId"
+          class="history-item"
         >
-          {{ item.primaryResult.label }}
+          <img
+            :alt="`${item.primaryResult.label} thumbnail`"
+            :src="item.thumbnailUrl"
+            class="history-thumbnail"
+          >
+          <ResultCard :result="item" />
         </li>
       </ul>
       <p v-else>
@@ -89,6 +110,32 @@ watch(resolvedVisitorId, async (visitorId) => {
 
 h1 {
   margin-top: 0;
+}
+
+.history-summary {
+  margin-top: -0.25rem;
+  color: #475569;
+}
+
+ul {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  margin: 1rem 0 0;
+  list-style: none;
+}
+
+.history-item {
+  display: grid;
+  gap: 1rem;
+}
+
+.history-thumbnail {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 1rem;
+  background: #e2e8f0;
 }
 
 .back-link {
