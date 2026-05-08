@@ -13,7 +13,7 @@
 2. 若沒有 GPS metadata，改用 AI 視覺推測。
 3. 若圖片線索不足，應明確回傳「無法判定」，而不是過度猜測。
 
-第一版要有明顯的產品感，不只是技術 demo；同時維持精簡、可在 Railway 上部署，並保留與真實雲端基礎設施對應的架構心智模型。
+第一版要有明顯的產品感，不只是技術 demo；同時維持精簡、可在 Zeabur 上部署，並保留與真實雲端基礎設施對應的架構心智模型。
 
 ## 產品目標
 
@@ -21,7 +21,7 @@
 - 提供可信的定位結果，並清楚表達信心與不確定性。
 - 優先使用真實 metadata，而不是一開始就依賴 AI 猜測。
 - 不用登入也能保留短中期歷史紀錄。
-- 保持本地開發優先、部署簡單，適合 Railway。
+- 保持本地開發優先、部署簡單，適合 Zeabur。
 
 ## 非目標
 
@@ -53,10 +53,10 @@
 
 ### 基礎設施
 
-- Railway 作為部署平台
-- Railway Postgres 儲存結構化資料
-- Railway Bucket 儲存縮圖
-- 本地開發優先，Railway 作為第一版部署目標
+- Zeabur 作為部署平台
+- Zeabur PostgreSQL service 儲存結構化資料
+- Zeabur Object Storage 或其他 S3 相容物件儲存縮圖
+- 本地開發優先，Zeabur 作為第一版部署目標
 
 ### 工程標準
 
@@ -121,16 +121,16 @@
 Vue SPA
   -> Backend REST API
       -> Postgres
-      -> Railway Bucket
+      -> S3-compatible object storage
       -> Gemini provider
 ```
 
-Railway 專案預期包含：
+Zeabur project 預期包含：
 
 - 前端 service
 - 後端 service
-- Postgres
-- Bucket
+- PostgreSQL service
+- Object Storage，或其他 S3 相容物件儲存
 
 第一版先維持同步流程，但後端模組邊界要保留未來改造成非同步 job 的空間。
 
@@ -303,7 +303,7 @@ interface VisionLocationProvider {
 - `candidate_locations`
 - `rate_limit_events` 或等價的聚合限制資料
 
-### Railway Bucket
+### Zeabur Object Storage / S3 相容儲存
 
 - 只存縮圖
 - 第一版不持久保存原圖
@@ -373,7 +373,7 @@ interface VisionLocationProvider {
 ## 已確認的關鍵決策
 
 - 前端使用 Vue，不做 SSR。
-- 第一版部署平台為 Railway。
+- 第一版部署平台為 Zeabur。
 - 第一版 AI provider 為 Gemini。
 - Gemini API key 初期由 Google AI Studio 取得。
 - 站內地圖優先低成本方案，外部導圖使用 Google Maps URL。

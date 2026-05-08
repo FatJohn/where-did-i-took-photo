@@ -10,5 +10,5 @@
 ## 協作原則
 
 - 延續目前 branch 與既有 implementation plan，不任意重開規劃。
-- 以 `docs/superpowers/specs/2026-04-22-photo-location-tool-design.md`、`docs/superpowers/plans/2026-04-22-photo-location-tool.md`、`HANDOFF.md` 為主要交接依據。
-- 進行程式修改前，先確認目前程式碼與 handoff 是否一致；若有衝突，先指出再處理。
+- 以 `README.md`、`docs/local-test-and-deploy-guide.md`、`docs/superpowers/specs/2026-04-22-photo-location-tool-design.md` 與 `openspec/specs/` 為主要交接依據。
+- 目前 repo 沒有 `HANDOFF.md`；進行程式修改前，先確認目前程式碼與上述文件是否一致，若有衝突，先指出再處理。

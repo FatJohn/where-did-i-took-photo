@@ -8,19 +8,35 @@
 
 ## 本機開發
 
+更完整的本機測試、Docker 服務規劃與 Zeabur 部署指南請看
+[`docs/local-test-and-deploy-guide.md`](docs/local-test-and-deploy-guide.md)。
+
 ### 前置需求
 
 - Node.js 22 以上
 - `pnpm` 10
-- API 可連線的 Postgres 資料庫
 - Gemini API key
 - 可相容 S3 的縮圖儲存設定
+
+補充：
+
+- 目前 runtime repository 仍是記憶體版本，Postgres schema 已存在但尚未接進正式 request flow。
+- 若要做部署等價測試，之後可用 Docker Postgres 對齊 Zeabur PostgreSQL service。
+- AI 視覺定位目前使用 Gemini，需要 `GEMINI_API_KEY`。
 
 ### 安裝
 
 ```bash
 pnpm install
 cp .env.example .env
+```
+
+後端目前直接讀取 `process.env`；如果只建立 `.env`，API dev script 不會自動載入它。啟動 API 前可先匯入：
+
+```bash
+set -a
+source .env
+set +a
 ```
 
 請依你的本機環境填入 `.env`：
@@ -82,18 +98,27 @@ pnpm --filter @photo-location/api typecheck
 pnpm --filter @photo-location/web typecheck
 ```
 
-## Railway 部署
+## Zeabur 部署
 
-目前這個 workspace 最適合部署成兩個 Railway service 加上託管資料資源：
+這裡是快速摘要；完整檢查清單請看
+[`docs/local-test-and-deploy-guide.md`](docs/local-test-and-deploy-guide.md)。
+
+目前這個 workspace 最適合在 Zeabur 建成兩個 application service 加上託管資料資源：
 
 - 一個 `apps/api` service
 - 一個 `apps/web` 靜態網站
-- 一個 Railway Postgres
-- 一個 Railway Bucket，或其他相容 S3 的物件儲存
+- 一個 Zeabur PostgreSQL service
+- 一個 Zeabur Object Storage，或其他相容 S3 的物件儲存
 
 ### API Service
 
-以 repo root 作為 Railway source，並設定：
+以 GitHub repo 作為 Zeabur source。因為這是 pnpm workspace，API service 需指定 app directory 或等價設定：
+
+- App directory / `ZBPACK_APP_DIR`：`apps/api`
+- Build command：`pnpm build`
+- Start command：`node dist/server.js`
+
+若選擇從 repo root 執行自訂命令，也可以設定：
 
 - Build command：`pnpm install --frozen-lockfile && pnpm --filter @photo-location/api build`
 - Start command：`node apps/api/dist/server.js`
@@ -112,14 +137,20 @@ API service 需要設定這些環境變數：
 
 ### Web Service
 
-建置 SPA 後發布靜態檔：
+以 GitHub repo 作為 Zeabur source，建置 SPA 後發布靜態檔：
+
+- App directory / `ZBPACK_APP_DIR`：`apps/web`
+- Build command：`pnpm build`
+- Output directory / `ZBPACK_OUTPUT_DIR`：`dist`
+
+若選擇從 repo root 執行自訂命令，也可以設定：
 
 - Build command：`pnpm install --frozen-lockfile && pnpm --filter @photo-location/web build`
 - Publish directory：`apps/web/dist`
 
 另外設定：
 
-- `VITE_API_BASE_URL=https://<your-api-service>.up.railway.app`
+- `VITE_API_BASE_URL=https://<your-api-service>.zeabur.app`
 
 ### 部署注意事項
 
