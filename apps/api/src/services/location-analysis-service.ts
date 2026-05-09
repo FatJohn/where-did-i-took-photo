@@ -25,11 +25,11 @@ export function createLocationAnalysisService(provider: VisionLocationProvider) 
           resultType: 'precise' as const,
           source: 'exif' as const,
           primaryResult: {
-            label: 'Photo metadata location',
+            label: '照片內建的 GPS 位置',
             latitude: input.metadata.latitude,
             longitude: input.metadata.longitude,
             confidence: 0.99,
-            reasonSummary: 'GPS metadata found in EXIF',
+            reasonSummary: '從照片 EXIF 讀到 GPS 座標。',
           },
           candidates: [],
         }

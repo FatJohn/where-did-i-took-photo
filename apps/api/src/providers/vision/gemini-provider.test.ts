@@ -70,11 +70,11 @@ describe('gemini vision location provider', () => {
     })).resolves.toEqual({
       resultType: 'not_found',
       primaryResult: {
-        label: 'Unable to determine location',
+        label: '無法判斷拍攝地點',
         latitude: null,
         longitude: null,
         confidence: 0,
-        reasonSummary: 'Gemini returned an empty response',
+        reasonSummary: 'Gemini 沒有回傳任何內容。',
       },
       candidates: [],
     })
@@ -90,7 +90,7 @@ describe('gemini vision location provider', () => {
     })).resolves.toMatchObject({
       resultType: 'not_found',
       primaryResult: {
-        reasonSummary: 'Gemini returned invalid JSON',
+        reasonSummary: 'Gemini 回傳的內容無法解析。',
       },
     })
 
@@ -114,7 +114,7 @@ describe('gemini vision location provider', () => {
     })).resolves.toMatchObject({
       resultType: 'not_found',
       primaryResult: {
-        reasonSummary: 'Gemini returned invalid JSON',
+        reasonSummary: 'Gemini 回傳的內容無法解析。',
       },
     })
   })
