@@ -17,6 +17,7 @@ export async function buildApp(options: BuildAppOptions) {
   await app.register(cors, {
     origin: true,
     credentials: true,
+    exposedHeaders: ['x-visitor-token'],
   })
   await app.register(sensible)
   await app.register(multipart, {
