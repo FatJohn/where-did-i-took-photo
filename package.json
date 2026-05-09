@@ -2,6 +2,13 @@
   "name": "where-did-i-took-photo",
   "private": true,
   "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "overrides": {
+      "fast-uri": "^3.1.2",
+      "fast-xml-parser": "^5.7.0",
+      "fast-xml-builder": "^1.1.7"
+    }
+  },
   "scripts": {
     "dev:services": "docker compose up -d",
     "dev:services:down": "docker compose down",
