@@ -6,6 +6,7 @@ import Fastify from 'fastify'
 import { analyzeRoute } from './routes/analyze'
 import { healthRoute } from './routes/health'
 import { historyRoute } from './routes/history'
+import { thumbnailsRoute } from './routes/thumbnails'
 
 interface BuildAppOptions {
   maxUploadBytes: number
@@ -29,6 +30,7 @@ export async function buildApp(options: BuildAppOptions) {
   await app.register(healthRoute)
   await app.register(analyzeRoute)
   await app.register(historyRoute)
+  await app.register(thumbnailsRoute)
 
   return app
 }

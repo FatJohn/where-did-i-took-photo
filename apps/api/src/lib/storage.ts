@@ -1,8 +1,9 @@
 import type { S3ClientConfig } from '@aws-sdk/client-s3'
 import type { Buffer } from 'node:buffer'
+import type { Readable } from 'node:stream'
 
 import process from 'node:process'
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
 function isLocalEndpoint(endpoint: string | undefined) {
   if (!endpoint) {
@@ -62,14 +63,9 @@ interface UploadThumbnailInput {
 
 export async function uploadThumbnail(params: UploadThumbnailInput) {
   const bucket = process.env.S3_BUCKET
-  const endpoint = process.env.S3_ENDPOINT
 
   if (!bucket) {
     throw new Error('S3_BUCKET is required')
-  }
-
-  if (!endpoint) {
-    throw new Error('S3_ENDPOINT is required')
   }
 
   const client = createStorageClient()
@@ -81,5 +77,26 @@ export async function uploadThumbnail(params: UploadThumbnailInput) {
     ContentType: params.contentType,
   }))
 
-  return `${endpoint.replace(/\/$/, '')}/${bucket}/${params.key}`
+  return `/thumbnails/${params.key}`
+}
+
+export async function getThumbnailObject(key: string) {
+  const bucket = process.env.S3_BUCKET
+
+  if (!bucket) {
+    throw new Error('S3_BUCKET is required')
+  }
+
+  const client = createStorageClient()
+  const result = await client.send(new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+  }))
+
+  return {
+    body: result.Body as Readable,
+    contentType: result.ContentType ?? 'application/octet-stream',
+    contentLength: result.ContentLength,
+    etag: result.ETag,
+  }
 }

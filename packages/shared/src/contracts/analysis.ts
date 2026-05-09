@@ -25,7 +25,7 @@ export const analysisResponseSchema = z.object({
   source: resultSourceSchema,
   primaryResult: primaryResultSchema,
   candidates: z.array(candidateSchema),
-  thumbnailUrl: z.string().url(),
+  thumbnailUrl: z.string().min(1),
   createdAt: z.string(),
   visitorId: z.string().optional(),
 })
