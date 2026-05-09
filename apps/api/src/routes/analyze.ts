@@ -20,6 +20,7 @@ export const analyzeRoute: FastifyPluginAsync = async (app) => {
     let visitorToken = ''
     let clientLatitude: number | null = null
     let clientLongitude: number | null = null
+    let clientGpsSource: 'exif' | 'device' | null = null
     const uploadDir = await mkdtemp(join(tmpdir(), 'photo-location-'))
     let upload: {
       filename: string
@@ -63,6 +64,13 @@ export const analyzeRoute: FastifyPluginAsync = async (app) => {
             clientLongitude = value
           }
         }
+        else if (part.fieldname === 'clientGpsSource') {
+          const value = String(part.value || '')
+
+          if (value === 'exif' || value === 'device') {
+            clientGpsSource = value
+          }
+        }
       }
 
       if (!upload) {
@@ -89,14 +97,19 @@ export const analyzeRoute: FastifyPluginAsync = async (app) => {
 
       const photoIntakeService = createPhotoIntakeService()
       const intake = await photoIntakeService.process(upload)
-      const metadata = (clientLatitude !== null && clientLongitude !== null)
+      const hasClientGps = clientLatitude !== null && clientLongitude !== null
+      const metadata = hasClientGps
         ? { latitude: clientLatitude, longitude: clientLongitude }
         : intake.metadata
+      const gpsSource: 'exif' | 'device' | undefined = hasClientGps
+        ? clientGpsSource ?? 'exif'
+        : undefined
       const locationAnalysisService = createLocationAnalysisService(createGeminiVisionLocationProvider())
       const analysis = await locationAnalysisService.analyze({
         metadata,
         imageBuffer: intake.originalBuffer,
         mimeType: upload.mimetype,
+        gpsSource,
       })
 
       const searchId = `search_${randomUUID()}`

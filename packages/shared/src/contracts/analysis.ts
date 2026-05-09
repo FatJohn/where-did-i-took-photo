@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const resultTypeSchema = z.enum(['precise', 'approximate', 'not_found'])
-export const resultSourceSchema = z.enum(['exif', 'ai'])
+export const resultSourceSchema = z.enum(['exif', 'ai', 'device'])
 
 export const primaryResultSchema = z.object({
   label: z.string(),

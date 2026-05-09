@@ -15,7 +15,14 @@ const badge = computed(() => {
   }
 })
 
-const sourceLabel = computed(() => props.result.source === 'exif' ? 'EXIF · GPS' : 'AI · 推測')
+const sourceLabel = computed(() => {
+  switch (props.result.source) {
+    case 'exif': return 'EXIF · GPS'
+    case 'device': return 'Device · 目前位置'
+    case 'ai':
+    default: return 'AI · 推測'
+  }
+})
 const confidencePct = computed(() => Math.round(props.result.primaryResult.confidence * 100))
 const createdAtLabel = computed(() => new Date(props.result.createdAt).toLocaleString('zh-TW'))
 

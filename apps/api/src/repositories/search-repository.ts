@@ -2,7 +2,7 @@ export interface StoredSearch {
   searchId: string
   visitorId: string
   resultType: 'precise' | 'approximate' | 'not_found'
-  source: 'exif' | 'ai'
+  source: 'exif' | 'ai' | 'device'
   primaryResult: {
     label: string
     latitude: number | null

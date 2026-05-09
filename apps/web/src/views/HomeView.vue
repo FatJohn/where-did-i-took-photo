@@ -13,6 +13,7 @@ const { errorMessage, result, status } = storeToRefs(analysisStore)
 const statusLabel = computed(() => {
   switch (status.value) {
     case 'submitting': return 'Reading clues · 翻找線索'
+    case 'awaiting-location': return 'Need a fix · 缺少位置'
     case 'success': return 'Found a fix · 已有結果'
     case 'error': return 'Trail went cold · 需要重試'
     default: return 'Stand by · 準備就緒'
@@ -21,6 +22,16 @@ const statusLabel = computed(() => {
 
 async function handlePhotoSubmit(photo: File) {
   try { await analysisStore.submitPhoto(photo) }
+  catch { /* store exposes the error */ }
+}
+
+async function handleUseDeviceLocation() {
+  try { await analysisStore.useDeviceLocation() }
+  catch { /* store exposes the error */ }
+}
+
+async function handleSkipLocation() {
+  try { await analysisStore.skipLocation() }
   catch { /* store exposes the error */ }
 }
 </script>
@@ -98,6 +109,47 @@ async function handlePhotoSubmit(photo: File) {
         </ol>
         <p class="loading-quote">
           “Look for the small things.” — 留意細節
+        </p>
+      </div>
+
+      <div
+        v-else-if="status === 'awaiting-location'"
+        class="awaiting-card"
+        data-testid="awaiting-location"
+      >
+        <p class="eyebrow">
+          · No GPS metadata ·
+        </p>
+        <p class="awaiting-title">
+          照片裡沒夾帶位置。
+        </p>
+        <p class="awaiting-msg">
+          手機相簿大多會把 GPS 剝掉再交給網頁，是隱私機制不是 bug。
+          要我用「裝置目前的位置」當參考點，還是直接交給 AI 推測？
+        </p>
+        <p v-if="errorMessage" class="awaiting-error">
+          {{ errorMessage }}
+        </p>
+        <div class="awaiting-actions">
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-testid="use-device-location"
+            @click="handleUseDeviceLocation"
+          >
+            Use my location · 使用目前位置
+          </button>
+          <button
+            class="btn btn-ghost"
+            type="button"
+            data-testid="skip-location"
+            @click="handleSkipLocation"
+          >
+            Skip · 直接交給 AI
+          </button>
+        </div>
+        <p class="awaiting-foot">
+          ※ 「目前位置」是現在的，不是拍照當下的。對舊照可能完全錯，請斟酌。
         </p>
       </div>
 
@@ -280,6 +332,62 @@ async function handlePhotoSubmit(photo: File) {
   font-style: italic;
   color: var(--ink-2);
   text-align: center;
+}
+
+/* Awaiting location */
+.awaiting-card {
+  padding: 1.5rem;
+  border-radius: var(--r-md);
+  background: rgba(184, 120, 43, 0.06);
+  border: 1px dashed rgba(184, 120, 43, 0.45);
+  display: grid;
+  gap: 0.65rem;
+}
+.awaiting-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.4rem;
+  margin: 0.2rem 0 0;
+  color: var(--ink);
+}
+.awaiting-msg {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+.awaiting-error {
+  margin: 0;
+  color: var(--rust);
+  font-size: 0.85rem;
+}
+.awaiting-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+.awaiting-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.05rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.awaiting-actions .btn-primary {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+}
+.awaiting-actions .btn-ghost {
+  background: transparent; color: var(--ink); border-color: var(--ink);
+}
+.awaiting-foot {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-2);
 }
 
 /* Error */

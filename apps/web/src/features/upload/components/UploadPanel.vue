@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps<{
-  status: 'idle' | 'submitting' | 'success' | 'error'
+  status: 'idle' | 'submitting' | 'awaiting-location' | 'success' | 'error'
 }>()
+
+const isMobile = computed(() => {
+  if (typeof navigator === 'undefined') return false
+
+  return /android|iphone|ipad|ipod|mobile|samsung/i.test(navigator.userAgent)
+})
 
 const emit = defineEmits<{ submit: [file: File] }>()
 
@@ -64,6 +70,11 @@ onBeforeUnmount(revokePreview)
       </p>
       <p class="drop-meta">
         JPG · PNG · HEIC · ≤ 10MB
+      </p>
+      <p v-if="isMobile" class="drop-hint" data-testid="mobile-hint">
+        手機相簿常會剝掉 GPS。<br>
+        iOS 17+ 請點選圖時左下「Options → Include Location」<br>
+        其他情況下方會問你要不要用裝置目前位置。
       </p>
       <div class="drop-actions">
         <label class="btn btn-primary" :class="{ disabled: status === 'submitting' }">
@@ -160,6 +171,18 @@ onBeforeUnmount(revokePreview)
 }
 .drop-sub { margin: 0; font-size: 0.85rem; color: var(--ink-2); }
 .drop-meta { margin: 0.2rem 0 0.6rem; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em; color: var(--ink-2); }
+
+.drop-hint {
+  margin: -0.2rem 0 0.6rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  border: 1px dashed rgba(184, 120, 43, 0.45);
+  border-radius: var(--r-sm);
+  background: rgba(184, 120, 43, 0.06);
+  max-width: 22rem;
+}
 
 .drop-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
 
