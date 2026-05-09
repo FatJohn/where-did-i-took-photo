@@ -3,6 +3,10 @@
   "private": true,
   "packageManager": "pnpm@10.0.0",
   "scripts": {
+    "dev:services": "docker compose up -d",
+    "dev:services:down": "docker compose down",
+    "dev:api:env": "set -a; . ./.env; set +a; pnpm --filter @photo-location/api dev",
+    "dev:web": "pnpm --filter @photo-location/web dev",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",

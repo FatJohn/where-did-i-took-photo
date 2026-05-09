@@ -1,6 +1,6 @@
 # 本機測試與部署指南
 
-本文整理目前專案要怎麼在本機測試、之後要補哪些 Docker 服務，以及 Zeabur 部署時要設定哪些服務與環境變數。
+本文整理目前專案要怎麼在本機測試、如何啟動本機 MinIO，以及 Zeabur 部署時要設定哪些服務與環境變數。
 
 ## 目前狀態
 
@@ -10,7 +10,7 @@
 - `/analyze` 的上傳欄位名稱固定是 `photo`。
 - `apps/api/src/db/schema.ts` 已經有 `visitors` 與 `searches` 的 Drizzle schema。
 - 目前 runtime repository 仍是記憶體版本；Postgres 尚未接到正式 request flow。
-- 目前沒有 `docker-compose.yml`、Zeabur config、migration script 或 DB init SQL。
+- 目前有 `docker-compose.yml` 可啟動 MinIO；尚未有 Zeabur config、migration script 或 DB init SQL。
 
 ## 本機測試目標
 
@@ -25,22 +25,30 @@
 
 ```bash
 pnpm install
+cp .env.example .env
+cp apps/web/.env.local.example apps/web/.env.local
 pnpm lint
 pnpm test
 pnpm typecheck
 pnpm build
 ```
 
+啟動本機 MinIO：
+
+```bash
+pnpm dev:services
+```
+
 啟動 API：
 
 ```bash
-pnpm --filter @photo-location/api dev
+pnpm dev:api:env
 ```
 
 啟動 Web：
 
 ```bash
-pnpm --filter @photo-location/web dev
+pnpm dev:web
 ```
 
 確認 API health check：
@@ -57,7 +65,7 @@ curl http://localhost:8787/health
 
 ## 環境變數
 
-後端目前直接讀取 `process.env`。如果只建立 `.env`，API dev script 不會自動載入它。正式補 Docker 或 local helper script 前，先用 shell 匯入：
+後端目前直接讀取 `process.env`。根目錄的 `pnpm dev:api:env` 會先載入 `.env` 再啟動 API；若要手動啟動，可用 shell 匯入：
 
 ```bash
 set -a
@@ -76,6 +84,7 @@ S3_REGION=auto
 S3_BUCKET=photo-location-thumbnails
 S3_ACCESS_KEY_ID=minioadmin
 S3_SECRET_ACCESS_KEY=minioadmin
+S3_FORCE_PATH_STYLE=true
 MAX_UPLOAD_BYTES=10485760
 VISITOR_LIMIT_PER_DAY=20
 IP_LIMIT_PER_DAY=50
@@ -97,34 +106,32 @@ AI 定位目前使用 Gemini，不是本機 Docker service。完整測試 `/anal
 - 沒有 GPS EXIF 的照片會走 Gemini 視覺推測。
 - Gemini 回傳不足或格式不符時，結果應退回 `not_found`，不要假裝精準。
 
-## Docker 服務規劃
+## Docker 服務
 
-晚點建立 Docker 時，建議先補這兩個服務：
+目前已提供 `docker-compose.yml`，先補最小可玩完整流程所需的 MinIO：
 
-1. Postgres：對齊 Zeabur PostgreSQL service，供未來 DB-backed repository 與 migration 測試使用。
-2. MinIO：對齊 Zeabur Object Storage 或其他 S3 相容物件儲存，供縮圖上傳測試使用。
+```bash
+pnpm dev:services
+```
+
+這會啟動：
+
+1. MinIO API：`http://localhost:9000`
+2. MinIO console：`http://localhost:9001`
+3. 自動建立 `photo-location-thumbnails` bucket
+4. 對該 bucket 開啟匿名下載，讓前端可以讀取 API 回傳的 `thumbnailUrl`
+
+Postgres 目前先不放進必跑服務，因為 runtime repository 仍是記憶體版本。之後切成 DB-backed repository 時，再補 Postgres 與 migration 初始化。
 
 暫不需要把 Gemini 放進 Docker。Gemini 只需要環境變數提供 API key。
 
-建議服務設定：
+目前 MinIO 服務設定：
 
-- Postgres image：`postgres:16`
-- Database：`photo_location`
-- User：`postgres`
-- Password：`postgres`
-- Host port：`5432`
 - MinIO image：`minio/minio:latest`
 - MinIO API port：`9000`
 - MinIO console port：`9001`
 - MinIO root user/password：`minioadmin` / `minioadmin`
 - Bucket：`photo-location-thumbnails`
-
-建立 Docker 時也要一起確認：
-
-- 是否新增 `docker-compose.yml`。
-- 是否新增 Postgres init SQL 或 migration runner。
-- 是否要新增 npm script，例如 `dev:api:env` 或 `dev:docker`。
-- MinIO 與 AWS SDK 是否需要 `forcePathStyle: true`。目前 `apps/api/src/lib/storage.ts` 尚未設定，實測 MinIO 時要特別確認。
 
 ## Postgres schema 備忘
 
@@ -143,25 +150,32 @@ AI 定位目前使用 Gemini，不是本機 Docker service。完整測試 `/anal
 
 ## MinIO 測試流程
 
-建立 Docker 後，MinIO console 預計在：
+MinIO console 在：
 
 ```text
 http://localhost:9001
 ```
 
-登入後建立 bucket：
+登入資訊：
+
+```text
+minioadmin / minioadmin
+```
+
+bucket 會由 `minio-create-bucket` compose service 自動建立：
 
 ```text
 photo-location-thumbnails
 ```
 
-接著用 `.env` 指向：
+`.env` 指向：
 
 ```bash
 S3_ENDPOINT=http://localhost:9000
 S3_BUCKET=photo-location-thumbnails
 S3_ACCESS_KEY_ID=minioadmin
 S3_SECRET_ACCESS_KEY=minioadmin
+S3_FORCE_PATH_STYLE=true
 ```
 
 完整 `/analyze` 測試時，預期 API 會把縮圖寫入 bucket，並在回應中回傳 `thumbnailUrl`。
@@ -221,6 +235,7 @@ S3_REGION=
 S3_BUCKET=
 S3_ACCESS_KEY_ID=
 S3_SECRET_ACCESS_KEY=
+S3_FORCE_PATH_STYLE=
 MAX_UPLOAD_BYTES=10485760
 VISITOR_LIMIT_PER_DAY=20
 IP_LIMIT_PER_DAY=50
@@ -273,8 +288,5 @@ VITE_API_BASE_URL=https://<your-api-service>.zeabur.app
 
 ## 待辦
 
-- 建立 `docker-compose.yml`。
 - 決定 Postgres 初始化方式。
-- 實測 MinIO 上傳，必要時調整 S3 client。
-- 視需要補 API dev script，讓本機 `.env` 載入更直覺。
 - 本機完整流程穩定後，再建立 Zeabur service 與託管資源。

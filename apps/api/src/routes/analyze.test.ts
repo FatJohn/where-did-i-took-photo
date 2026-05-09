@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const resolveVisitorMock = vi.fn(async (visitorToken?: string) => ({
   visitorId: `visitor_for_${visitorToken || 'new'}`,
@@ -71,6 +71,17 @@ vi.mock('../lib/storage', () => ({
 }))
 
 const { buildApp } = await import('../app')
+const apps: Awaited<ReturnType<typeof buildApp>>[] = []
+
+async function buildAnalyzeTestApp() {
+  const app = await buildApp({
+    maxUploadBytes: 10_485_760,
+  })
+
+  apps.push(app)
+
+  return app
+}
 
 function createMultipartBody(boundary: string, options?: {
   fieldName?: string
@@ -148,11 +159,14 @@ beforeEach(() => {
   uploadThumbnailMock.mockResolvedValue('https://bucket.example/thumb.jpg')
 })
 
+afterEach(async () => {
+  await Promise.all(apps.map(app => app.close()))
+  apps.length = 0
+})
+
 describe('post /analyze', () => {
   it('returns a normalized analysis response', async () => {
-    const app = await buildApp({
-      maxUploadBytes: 10_485_760,
-    })
+    const app = await buildAnalyzeTestApp()
     const boundary = '----codex-boundary'
 
     const response = await app.inject({
@@ -180,9 +194,7 @@ describe('post /analyze', () => {
   })
 
   it('accepts visitorToken fields that arrive after the file part', async () => {
-    const app = await buildApp({
-      maxUploadBytes: 10_485_760,
-    })
+    const app = await buildAnalyzeTestApp()
     const boundary = '----codex-boundary-late-token'
 
     const response = await app.inject({
@@ -200,9 +212,7 @@ describe('post /analyze', () => {
   })
 
   it('returns 400 when the photo upload is missing', async () => {
-    const app = await buildApp({
-      maxUploadBytes: 10_485_760,
-    })
+    const app = await buildAnalyzeTestApp()
     const boundary = '----codex-boundary-no-photo'
 
     const response = await app.inject({
@@ -221,9 +231,7 @@ describe('post /analyze', () => {
   it('returns 415 for unsupported media types', async () => {
     processMock.mockRejectedValueOnce(new Error('Unsupported media type'))
 
-    const app = await buildApp({
-      maxUploadBytes: 10_485_760,
-    })
+    const app = await buildAnalyzeTestApp()
     const boundary = '----codex-boundary-unsupported'
 
     const response = await app.inject({
@@ -241,9 +249,7 @@ describe('post /analyze', () => {
   it('returns 429 when the rate limit is exceeded', async () => {
     checkOrThrowMock.mockRejectedValueOnce(new Error('Rate limit exceeded'))
 
-    const app = await buildApp({
-      maxUploadBytes: 10_485_760,
-    })
+    const app = await buildAnalyzeTestApp()
     const boundary = '----codex-boundary-rate-limit'
 
     const response = await app.inject({
@@ -260,9 +266,7 @@ describe('post /analyze', () => {
   })
 
   it('requires the upload file field to be named photo', async () => {
-    const app = await buildApp({
-      maxUploadBytes: 10_485_760,
-    })
+    const app = await buildAnalyzeTestApp()
     const boundary = '----codex-boundary-wrong-field'
 
     const response = await app.inject({

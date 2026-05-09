@@ -29,26 +29,20 @@
 ```bash
 pnpm install
 cp .env.example .env
+cp apps/web/.env.local.example apps/web/.env.local
 ```
 
-後端目前直接讀取 `process.env`；如果只建立 `.env`，API dev script 不會自動載入它。啟動 API 前可先匯入：
-
-```bash
-set -a
-source .env
-set +a
-```
-
-請依你的本機環境填入 `.env`：
+請依你的本機環境填入 `.env`，至少補上 `GEMINI_API_KEY`：
 
 ```bash
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/photo_location
 GEMINI_API_KEY=your-key
-S3_ENDPOINT=https://your-bucket-endpoint
+S3_ENDPOINT=http://localhost:9000
 S3_REGION=auto
 S3_BUCKET=photo-location-thumbnails
-S3_ACCESS_KEY_ID=your-access-key
-S3_SECRET_ACCESS_KEY=your-secret-key
+S3_ACCESS_KEY_ID=minioadmin
+S3_SECRET_ACCESS_KEY=minioadmin
+S3_FORCE_PATH_STYLE=true
 MAX_UPLOAD_BYTES=10485760
 VISITOR_LIMIT_PER_DAY=20
 IP_LIMIT_PER_DAY=50
@@ -68,16 +62,22 @@ VITE_API_BASE_URL=http://localhost:8787
 
 ### 啟動
 
-先啟動 API：
+先啟動本機 MinIO，這會自動建立 `photo-location-thumbnails` bucket 並開放本機讀取縮圖：
 
 ```bash
-pnpm --filter @photo-location/api dev
+pnpm dev:services
+```
+
+再啟動 API：
+
+```bash
+pnpm dev:api:env
 ```
 
 再用另一個 terminal 啟動前端：
 
 ```bash
-pnpm --filter @photo-location/web dev
+pnpm dev:web
 ```
 
 ### 本機驗證
@@ -132,6 +132,7 @@ API service 需要設定這些環境變數：
 - `S3_BUCKET`
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
+- `S3_FORCE_PATH_STYLE`：本機 MinIO 設為 `true`；一般 Zeabur/S3 相容服務依供應商需求設定，未設定時遠端 endpoint 預設不強制 path-style。
 - `MAX_UPLOAD_BYTES`
 - `PORT`
 
