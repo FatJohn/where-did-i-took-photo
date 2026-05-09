@@ -21,7 +21,7 @@ function resolveApiUrl(path: string) {
   return new URL(path, API_BASE_URL).toString()
 }
 
-function getStoredVisitorToken() {
+export function getStoredVisitorToken() {
   return localStorage.getItem(VISITOR_TOKEN_STORAGE_KEY)
 }
 

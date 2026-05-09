@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router'
 
 import { useHistoryStore } from '@/features/history/stores/history'
 import ResultCard from '@/features/results/components/ResultCard.vue'
-import { getStoredVisitorId } from '@/shared/api/client'
+import { getStoredVisitorId, getStoredVisitorToken } from '@/shared/api/client'
 
 const route = useRoute()
 const historyStore = useHistoryStore()
@@ -22,7 +22,7 @@ const resolvedVisitorId = computed(() => {
 })
 
 watch(resolvedVisitorId, async (visitorId) => {
-  if (!visitorId) {
+  if (!visitorId || !getStoredVisitorToken()) {
     historyStore.reset()
     return
   }

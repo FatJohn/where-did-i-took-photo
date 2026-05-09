@@ -36,13 +36,15 @@ describe('home view', () => {
 
     await router.push('/')
 
+    const pinia = createPinia()
     const wrapper = mount(HomeView, {
       global: {
-        plugins: [createPinia(), router],
+        plugins: [pinia, router],
       },
     })
+    const analysisStore = useAnalysisStore(pinia)
 
-    await wrapper.get('[data-testid="submit-demo"]').trigger('click')
+    await analysisStore.submitDemo()
     await flushPromises()
 
     expect(wrapper.text()).toContain('Taipei 101')

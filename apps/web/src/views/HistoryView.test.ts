@@ -13,6 +13,7 @@ vi.mock('../shared/api/client', () => ({
   analyzePhoto: vi.fn(),
   fetchHistory: fetchHistoryMock,
   getStoredVisitorId: () => localStorage.getItem('photo-location.visitor-id'),
+  getStoredVisitorToken: () => localStorage.getItem('photo-location.visitor-token'),
 }))
 
 describe('history view', () => {
@@ -23,6 +24,7 @@ describe('history view', () => {
 
   it('loads history by using stored visitor context when no route param is present', async () => {
     localStorage.setItem('photo-location.visitor-id', 'visitor_stored')
+    localStorage.setItem('photo-location.visitor-token', 'token_stored')
     fetchHistoryMock.mockResolvedValue({
       items: [
         {
@@ -61,6 +63,7 @@ describe('history view', () => {
 
   it('renders summary cards and thumbnails for loaded history items', async () => {
     localStorage.setItem('photo-location.visitor-id', 'visitor_stored')
+    localStorage.setItem('photo-location.visitor-token', 'token_stored')
     fetchHistoryMock.mockResolvedValue({
       items: [
         {

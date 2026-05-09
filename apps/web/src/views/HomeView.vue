@@ -23,7 +23,7 @@ const statusLabel = computed(() => {
   }
 })
 
-async function handlePhotoSelected(photo: File) {
+async function handlePhotoSubmit(photo: File) {
   try {
     await analysisStore.submitPhoto(photo)
   }
@@ -52,51 +52,70 @@ async function handlePhotoSelected(photo: File) {
     </section>
 
     <section class="foundation-card">
-      <UploadPanel @select="handlePhotoSelected" />
-
-      <p
-        v-if="status === 'submitting'"
-        class="helper-text"
-      >
-        正在解析照片、整理 EXIF，並在必要時交給 AI 推測位置。
-      </p>
-      <p
-        v-else-if="status === 'error'"
-        class="helper-text helper-text-error"
-      >
-        分析失敗：{{ errorMessage }}
-      </p>
-
-      <h2>也可以直接跑既有 demo flow</h2>
-      <p>
-        這個按鈕會維持既有示範提交流程，方便快速驗證 API 與頁面整合。
-      </p>
-
-      <div class="actions">
-        <button
-          data-testid="submit-demo"
-          class="demo-button"
-          type="button"
-          @click="analysisStore.submitDemo()"
-        >
-          分析示範照片
-        </button>
-        <RouterLink
-          data-testid="history-link"
-          class="history-link"
-          to="/history"
-        >
-          查看匿名歷史
-        </RouterLink>
-      </div>
+      <UploadPanel
+        :status="status"
+        @submit="handlePhotoSubmit"
+      />
     </section>
 
     <section
-      v-if="status === 'success' && result"
-      class="results-grid"
+      class="results-section"
+      :aria-busy="status === 'submitting'"
     >
-      <ResultCard :result="result" />
-      <ResultMap :result="result" />
+      <header class="results-header">
+        <h2>分析結果</h2>
+        <span
+          v-if="status === 'submitting'"
+          class="results-pill results-pill-loading"
+          data-testid="results-loading-pill"
+        >
+          <span class="spinner" aria-hidden="true" />
+          分析中…
+        </span>
+      </header>
+
+      <div
+        v-if="status === 'submitting'"
+        class="results-loading"
+        role="status"
+        aria-live="polite"
+        data-testid="results-loading"
+      >
+        <div class="skeleton skeleton-line skeleton-line-lg" />
+        <div class="skeleton skeleton-line" />
+        <div class="skeleton skeleton-line skeleton-line-sm" />
+        <div class="skeleton skeleton-block" />
+        <p class="loading-hint">
+          正在解析 EXIF 並在必要時交給 AI 推測位置，請稍候…
+        </p>
+      </div>
+
+      <div
+        v-else-if="status === 'error'"
+        class="results-error"
+        data-testid="results-error"
+      >
+        <p class="results-error-title">
+          分析失敗
+        </p>
+        <p>{{ errorMessage }}</p>
+      </div>
+
+      <div
+        v-else-if="status === 'success' && result"
+        class="results-grid"
+      >
+        <ResultCard :result="result" />
+        <ResultMap :result="result" />
+      </div>
+
+      <p
+        v-else
+        class="results-empty"
+        data-testid="results-empty"
+      >
+        上傳照片後，分析結果會顯示在這裡。
+      </p>
     </section>
   </main>
 </template>
@@ -112,7 +131,7 @@ async function handlePhotoSelected(photo: File) {
 
 .hero,
 .foundation-card,
-.results-grid {
+.results-section {
   padding: 1.5rem;
   border: 1px solid rgba(146, 64, 14, 0.12);
   border-radius: 1.25rem;
@@ -129,8 +148,7 @@ async function handlePhotoSelected(photo: File) {
   text-transform: uppercase;
 }
 
-h1,
-h2 {
+h1 {
   margin: 0;
 }
 
@@ -145,54 +163,138 @@ h2 {
   color: #475569;
 }
 
-.foundation-card p {
-  margin-bottom: 1rem;
-  line-height: 1.7;
+.results-section {
+  display: grid;
+  gap: 1rem;
 }
 
-.helper-text {
-  margin-top: 1rem;
-  color: #475569;
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
-.helper-text-error {
+.results-header h2 {
+  margin: 0;
+}
+
+.results-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.results-pill-loading {
+  background: rgba(146, 64, 14, 0.12);
+  color: #92400e;
+}
+
+.spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.results-empty {
+  margin: 0;
+  padding: 2rem;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.7);
+  color: #64748b;
+  text-align: center;
+}
+
+.results-loading {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.7) 0%,
+    rgba(241, 245, 249, 0.95) 50%,
+    rgba(226, 232, 240, 0.7) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 0.5rem;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 0.9rem;
+}
+
+.skeleton-line-lg {
+  height: 1.4rem;
+  width: 60%;
+}
+
+.skeleton-line-sm {
+  height: 0.9rem;
+  width: 40%;
+}
+
+.skeleton-block {
+  height: 220px;
+  border-radius: 0.85rem;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.loading-hint {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.results-error {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 1rem;
+  background: rgba(254, 242, 242, 0.9);
   color: #b91c1c;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.results-error p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.results-error-title {
+  font-weight: 700;
 }
 
 .results-grid {
   display: grid;
   gap: 1rem;
-}
-
-.history-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1rem;
-  border-radius: 999px;
-  background: #92400e;
-  color: #fff;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.demo-button {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1rem;
-  border-radius: 999px;
-  background: #1f2937;
-  color: #fff;
-  font-weight: 600;
 }
 </style>
