@@ -7,5 +7,8 @@ export default mergeConfig(viteConfig, defineConfig({
   test: {
     environment: 'happy-dom',
     include: ['src/**/*.test.ts'],
+    env: {
+      VITE_API_BASE_URL: '',
+    },
   },
 }))
