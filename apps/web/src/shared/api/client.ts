@@ -3,6 +3,7 @@ import {
   analysisResponseSchema,
   historyResponseSchema,
 } from '@photo-location/shared'
+import exifr from 'exifr'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const VISITOR_ID_STORAGE_KEY = 'photo-location.visitor-id'
@@ -45,9 +46,36 @@ async function readError(response: Response) {
   throw new Error(message || `Request failed with status ${response.status}`)
 }
 
+async function readClientGps(file: File): Promise<{ latitude: number, longitude: number } | null> {
+  try {
+    const result = await exifr.gps(file)
+
+    if (
+      result
+      && typeof result.latitude === 'number'
+      && typeof result.longitude === 'number'
+      && Number.isFinite(result.latitude)
+      && Number.isFinite(result.longitude)
+    ) {
+      return { latitude: result.latitude, longitude: result.longitude }
+    }
+  }
+  catch {
+    // 解析失敗就交給後端 fallback
+  }
+
+  return null
+}
+
 export async function analyzePhoto(input: AnalyzePhotoInput): Promise<AnalysisResponse> {
   const formData = new FormData()
   formData.append('photo', input.photo)
+
+  const clientGps = await readClientGps(input.photo)
+  if (clientGps) {
+    formData.append('clientLatitude', String(clientGps.latitude))
+    formData.append('clientLongitude', String(clientGps.longitude))
+  }
 
   const visitorToken = input.visitorToken ?? getStoredVisitorToken()
   if (visitorToken) {

@@ -82,6 +82,9 @@ importers:
       '@photo-location/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      exifr:
+        specifier: ^7.1.3
+        version: 7.1.3
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4

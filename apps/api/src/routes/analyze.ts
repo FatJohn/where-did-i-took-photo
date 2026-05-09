@@ -18,6 +18,8 @@ import { createVisitorService } from '../services/visitor-service'
 export const analyzeRoute: FastifyPluginAsync = async (app) => {
   app.post('/analyze', async (request, reply) => {
     let visitorToken = ''
+    let clientLatitude: number | null = null
+    let clientLongitude: number | null = null
     const uploadDir = await mkdtemp(join(tmpdir(), 'photo-location-'))
     let upload: {
       filename: string
@@ -47,6 +49,20 @@ export const analyzeRoute: FastifyPluginAsync = async (app) => {
         if (part.fieldname === 'visitorToken') {
           visitorToken = String(part.value || '')
         }
+        else if (part.fieldname === 'clientLatitude') {
+          const value = Number.parseFloat(String(part.value))
+
+          if (Number.isFinite(value) && value >= -90 && value <= 90) {
+            clientLatitude = value
+          }
+        }
+        else if (part.fieldname === 'clientLongitude') {
+          const value = Number.parseFloat(String(part.value))
+
+          if (Number.isFinite(value) && value >= -180 && value <= 180) {
+            clientLongitude = value
+          }
+        }
       }
 
       if (!upload) {
@@ -73,9 +89,12 @@ export const analyzeRoute: FastifyPluginAsync = async (app) => {
 
       const photoIntakeService = createPhotoIntakeService()
       const intake = await photoIntakeService.process(upload)
+      const metadata = (clientLatitude !== null && clientLongitude !== null)
+        ? { latitude: clientLatitude, longitude: clientLongitude }
+        : intake.metadata
       const locationAnalysisService = createLocationAnalysisService(createGeminiVisionLocationProvider())
       const analysis = await locationAnalysisService.analyze({
-        metadata: intake.metadata,
+        metadata,
         imageBuffer: intake.originalBuffer,
         mimeType: upload.mimetype,
       })
