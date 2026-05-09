@@ -67,6 +67,16 @@ pnpm --filter @photo-location/api exec vitest run -t "rate limit"
 - `packages/shared/src/contracts/{analysis,history}.ts` 是 Zod schema 的單一真相來源；前後端的請求/回應型別都從這裡推導。
 - 改 contract 時請同步更新 API route handler 與 web store/components，並跑全 workspace `pnpm typecheck` + `pnpm test`。
 
+## Zeabur 部署
+
+- Project: `where-did-i-took-photo` (`69fe9e545aa21e4719e6bb8e`)，region 為 Tencent Tokyo dedicated server
+- Services
+  - `minio` (`69fe9e77e6a21fff4d95b639`)：MinIO 模板（Code `TLJ3RL`），預設 bucket `zeabur`，access key `minio`，password 在 `MINIO_ROOT_PASSWORD` 變數
+  - `api` (`69fea1d84a961c814e9e979b`)：依 `Dockerfile.api`（runtime tsx，PORT 8080）建構，service env 設 `ZBPACK_DOCKERFILE_NAME=Dockerfile.api`
+  - `web` (`69fea2854a961c814e9e97bc`)：依 `Dockerfile.web`（pnpm build → nginx），service env 設 `ZBPACK_DOCKERFILE_NAME=Dockerfile.web`；前端走 same-origin reverse proxy 到 `api.zeabur.internal:8080`，故不需要 build-time `VITE_API_BASE_URL`
+- Redeploy 一律帶 `--service-id`，避免 zeabur deploy 重複建 service
+- `GEMINI_API_KEY` 部署後需到 Zeabur Dashboard 手動填入真值
+
 ## 開發紀律
 
 - 預設所有對話、commit message 都用**繁體中文台灣用語**（見 [agent.md](agent.md)）。技術名詞可保留英文。
