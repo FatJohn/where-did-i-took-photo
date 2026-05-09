@@ -1,74 +1,155 @@
+<script setup lang="ts">
+import { RouterLink, RouterView } from 'vue-router'
+</script>
+
 <template>
   <div class="app-shell">
     <header class="app-header">
-      <RouterLink
-        class="brand"
-        to="/"
-      >
-        照片定位工具
+      <RouterLink to="/" class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <span class="brand-dot" />
+        </span>
+        <span class="brand-text">
+          <span class="brand-name">Wherewas</span>
+          <span class="brand-sub">Field Notes Atlas</span>
+        </span>
       </RouterLink>
 
-      <nav class="nav">
-        <RouterLink
-          class="nav-link"
-          to="/"
-        >
-          首頁
+      <nav class="nav" aria-label="Primary">
+        <RouterLink to="/" class="nav-link">
+          Find · 找
         </RouterLink>
-        <RouterLink
-          class="nav-link"
-          to="/history"
-        >
-          歷史
+        <RouterLink to="/history" class="nav-link">
+          Field Log · 日誌
         </RouterLink>
       </nav>
+
+      <div class="meta">
+        <span>EST · 2026</span>
+      </div>
     </header>
 
     <RouterView />
+
+    <footer class="app-footer">
+      <span class="eyebrow">Wherewas · Field Notes</span>
+      <span>EXIF first · AI when needed · Honest when not</span>
+    </footer>
   </div>
 </template>
 
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(218, 165, 32, 0.18), transparent 28%),
-    linear-gradient(180deg, #f7f1e3 0%, #f5f5f4 42%, #ffffff 100%);
-  color: #1f2937;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: min(960px, calc(100% - 2rem));
+  gap: 1.5rem;
+  width: min(1280px, calc(100% - 2.5rem));
   margin: 0 auto;
-  padding: 1.5rem 0 1rem;
+  padding: 1.25rem 0 1rem;
+  border-bottom: 1px solid var(--edge);
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
   color: inherit;
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
   text-decoration: none;
+}
+
+.brand-mark {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+
+.brand-dot {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+.brand-text {
+  display: grid;
+  line-height: 1;
+}
+
+.brand-name {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.brand-sub {
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-2);
+  text-transform: uppercase;
 }
 
 .nav {
+  justify-self: center;
   display: flex;
-  gap: 0.75rem;
+  gap: 0.25rem;
 }
 
 .nav-link {
-  padding: 0.5rem 0.85rem;
+  padding: 0.5rem 0.95rem;
   border-radius: 999px;
-  color: #374151;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.92rem;
   text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+  background: rgba(184, 120, 43, 0.08);
 }
 
 .nav-link.router-link-exact-active {
-  background: rgba(146, 64, 14, 0.1);
-  color: #92400e;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.meta {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-2);
+}
+
+.app-footer {
+  width: min(1280px, calc(100% - 2.5rem));
+  margin: 2rem auto 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--edge);
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    grid-template-columns: 1fr auto;
+    row-gap: 0.5rem;
+  }
+  .nav { grid-column: 1 / -1; justify-self: stretch; }
+  .meta { display: none; }
 }
 </style>

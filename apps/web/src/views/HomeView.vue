@@ -12,93 +12,109 @@ const { errorMessage, result, status } = storeToRefs(analysisStore)
 
 const statusLabel = computed(() => {
   switch (status.value) {
-    case 'submitting':
-      return '分析中'
-    case 'success':
-      return '已有結果'
-    case 'error':
-      return '需要重試'
-    default:
-      return '準備就緒'
+    case 'submitting': return 'Reading clues · 翻找線索'
+    case 'success': return 'Found a fix · 已有結果'
+    case 'error': return 'Trail went cold · 需要重試'
+    default: return 'Stand by · 準備就緒'
   }
 })
 
 async function handlePhotoSubmit(photo: File) {
-  try {
-    await analysisStore.submitPhoto(photo)
-  }
-  catch {
-    // The store already exposes the error state for the view.
-  }
+  try { await analysisStore.submitPhoto(photo) }
+  catch { /* store exposes the error */ }
 }
 </script>
 
 <template>
-  <main class="home-view">
-    <section class="hero">
+  <main class="home">
+    <!-- Hero (only when idle / first time) -->
+    <section v-if="status === 'idle'" class="hero">
       <p class="eyebrow">
-        Photo Location Tool
+        · Entry №247 ·
       </p>
-      <h1>照片定位工具</h1>
-      <p class="summary">
-        EXIF / GPS metadata 優先，沒有座標時再交給 AI 推測，證據不足就明確回傳無法判定。
+      <h1 class="hero-title">
+        Where<br>
+        <em>did</em> I take<br>
+        this photo?
+      </h1>
+      <p class="hero-sub">
+        一張照片，沿著線索折開地圖。<br>
+        EXIF 先讀，沒座標就交給 AI 推測，證據不足會說不夠。
       </p>
-      <p
-        data-testid="analysis-status"
-        class="status"
-      >
-        分析狀態：{{ statusLabel }}
+      <p class="status-line" data-testid="analysis-status">
+        <span class="status-dot" :data-state="status" />
+        {{ statusLabel }}
       </p>
     </section>
 
-    <section class="foundation-card">
+    <!-- Upload -->
+    <section class="upload-wrap" :data-state="status">
       <UploadPanel
         :status="status"
         @submit="handlePhotoSubmit"
       />
     </section>
 
+    <!-- Results -->
     <section
-      class="results-section"
+      v-if="status !== 'idle'"
+      class="results"
       :aria-busy="status === 'submitting'"
     >
-      <header class="results-header">
+      <header class="results-head">
+        <p class="eyebrow">
+          · Field Report ·
+        </p>
         <h2>分析結果</h2>
         <span
           v-if="status === 'submitting'"
-          class="results-pill results-pill-loading"
+          class="pill pill-loading"
           data-testid="results-loading-pill"
         >
-          <span class="spinner" aria-hidden="true" />
-          分析中…
+          <span class="spinner" aria-hidden="true" /> Reading clues…
         </span>
       </header>
 
       <div
         v-if="status === 'submitting'"
-        class="results-loading"
+        class="loading-card"
         role="status"
         aria-live="polite"
         data-testid="results-loading"
       >
-        <div class="skeleton skeleton-line skeleton-line-lg" />
-        <div class="skeleton skeleton-line" />
-        <div class="skeleton skeleton-line skeleton-line-sm" />
-        <div class="skeleton skeleton-block" />
-        <p class="loading-hint">
-          正在解析 EXIF 並在必要時交給 AI 推測位置，請稍候…
+        <ol class="loading-steps">
+          <li class="done">
+            <span class="step-mark" /> EXIF / GPS metadata <em>讀取相片標頭</em>
+          </li>
+          <li class="active">
+            <span class="step-mark" /> Visual landmarks <em>辨識視覺地標</em>
+          </li>
+          <li>
+            <span class="step-mark" /> Cross-reference atlas <em>比對地圖庫</em>
+          </li>
+          <li>
+            <span class="step-mark" /> Triangulate confidence <em>計算信心區間</em>
+          </li>
+        </ol>
+        <p class="loading-quote">
+          “Look for the small things.” — 留意細節
         </p>
       </div>
 
       <div
         v-else-if="status === 'error'"
-        class="results-error"
+        class="error-card"
         data-testid="results-error"
       >
-        <p class="results-error-title">
-          分析失敗
+        <p class="eyebrow eyebrow-rust">
+          · Inconclusive ·
         </p>
-        <p>{{ errorMessage }}</p>
+        <p class="error-title">
+          The trail went cold.
+        </p>
+        <p class="error-msg">
+          {{ errorMessage }}
+        </p>
       </div>
 
       <div
@@ -108,193 +124,192 @@ async function handlePhotoSubmit(photo: File) {
         <ResultCard :result="result" />
         <ResultMap :result="result" />
       </div>
-
-      <p
-        v-else
-        class="results-empty"
-        data-testid="results-empty"
-      >
-        上傳照片後，分析結果會顯示在這裡。
-      </p>
     </section>
   </main>
 </template>
 
 <style scoped>
-.home-view {
-  display: grid;
-  gap: 1.5rem;
-  width: min(960px, calc(100% - 2rem));
+.home {
+  width: min(1280px, calc(100% - 2.5rem));
   margin: 0 auto;
-  padding: 2rem 0 3rem;
-}
-
-.hero,
-.foundation-card,
-.results-section {
-  padding: 1.5rem;
-  border: 1px solid rgba(146, 64, 14, 0.12);
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 18px 45px rgba(148, 163, 184, 0.08);
-}
-
-.eyebrow {
-  margin: 0 0 0.75rem;
-  color: #92400e;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0;
-}
-
-.summary {
-  max-width: 42rem;
-  margin: 1rem 0;
-  line-height: 1.7;
-}
-
-.status {
-  margin: 0;
-  color: #475569;
-}
-
-.results-section {
+  padding: 1.75rem 0 2.5rem;
   display: grid;
-  gap: 1rem;
+  gap: 2rem;
 }
 
-.results-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+/* Hero */
+.hero { padding: 1rem 0 0.5rem; }
+
+.hero-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  margin: 0.5rem 0 0;
+  text-wrap: balance;
 }
 
-.results-header h2 {
-  margin: 0;
+.hero-title em {
+  font-style: italic;
+  color: var(--amber);
 }
 
-.results-pill {
+.hero-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin: 1.25rem 0 0;
+  max-width: 32rem;
+}
+
+.status-line {
+  margin: 1.5rem 0 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.7rem;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ink-2);
+}
+.status-dot[data-state="submitting"] { background: var(--amber); animation: a-pulse 1.2s infinite; }
+.status-dot[data-state="success"] { background: var(--green); }
+.status-dot[data-state="error"] { background: var(--rust); }
+
+@keyframes a-pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+
+/* Upload card */
+.upload-wrap {
+  padding: 1.5rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-paper);
+}
+
+/* Results */
+.results { display: grid; gap: 1rem; }
+
+.results-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--edge);
+}
+.results-head h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.6rem;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
-
-.results-pill-loading {
-  background: rgba(146, 64, 14, 0.12);
-  color: #92400e;
+.pill-loading {
+  background: rgba(184, 120, 43, 0.12);
+  color: var(--amber);
 }
-
 .spinner {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.8rem; height: 0.8rem;
   border: 2px solid currentColor;
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* Loading detective panel */
+.loading-card {
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.55);
 }
-
-.results-empty {
+.loading-steps {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  padding: 2rem;
-  border: 1px dashed rgba(148, 163, 184, 0.5);
-  border-radius: 1rem;
-  background: rgba(248, 250, 252, 0.7);
-  color: #64748b;
+  display: grid;
+  gap: 0.1rem;
+}
+.loading-steps li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0;
+  border-top: 1px dashed var(--edge);
+  font-size: 0.95rem;
+  color: var(--ink-2);
+}
+.loading-steps li:first-child { border-top: none; }
+.loading-steps li em { display: block; font-style: normal; font-size: 0.72rem; color: var(--ink-2); }
+.loading-steps .step-mark {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid var(--edge);
+}
+.loading-steps .done { color: var(--ink); }
+.loading-steps .done .step-mark { background: var(--ink); border-color: var(--ink); }
+.loading-steps .active { color: var(--ink); font-weight: 600; }
+.loading-steps .active .step-mark {
+  border-color: var(--ink);
+  background: radial-gradient(circle, var(--amber) 0 5px, transparent 5.5px);
+  animation: a-pulse 1.2s infinite;
+}
+.loading-quote {
+  margin: 1rem 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-2);
   text-align: center;
 }
 
-.results-loading {
-  display: grid;
-  gap: 0.75rem;
-  padding: 1.25rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.95);
+/* Error */
+.error-card {
+  padding: 1.5rem;
+  border-radius: var(--r-md);
+  background: rgba(160, 74, 31, 0.06);
+  border: 1px dashed rgba(160, 74, 31, 0.4);
 }
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(226, 232, 240, 0.7) 0%,
-    rgba(241, 245, 249, 0.95) 50%,
-    rgba(226, 232, 240, 0.7) 100%
-  );
-  background-size: 200% 100%;
-  border-radius: 0.5rem;
-  animation: shimmer 1.4s ease-in-out infinite;
+.eyebrow-rust { color: var(--rust); }
+.error-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.6rem;
+  margin: 0.4rem 0 0.5rem;
+  color: var(--rust);
 }
+.error-msg { margin: 0; color: var(--ink-2); line-height: 1.55; }
 
-.skeleton-line {
-  height: 0.9rem;
-}
-
-.skeleton-line-lg {
-  height: 1.4rem;
-  width: 60%;
-}
-
-.skeleton-line-sm {
-  height: 0.9rem;
-  width: 40%;
-}
-
-.skeleton-block {
-  height: 220px;
-  border-radius: 0.85rem;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.loading-hint {
-  margin: 0.25rem 0 0;
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-.results-error {
-  display: grid;
-  gap: 0.35rem;
-  padding: 1.25rem;
-  border: 1px solid rgba(220, 38, 38, 0.2);
-  border-radius: 1rem;
-  background: rgba(254, 242, 242, 0.9);
-  color: #b91c1c;
-}
-
-.results-error p {
-  margin: 0;
-  line-height: 1.6;
-}
-
-.results-error-title {
-  font-weight: 700;
-}
-
+/* Result grid */
 .results-grid {
   display: grid;
   gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .results-grid {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    align-items: start;
+  }
 }
 </style>
